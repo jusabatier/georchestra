@@ -60,8 +60,8 @@
                    | If more than one instance of the same handler class is configured, you must explicitly
                    | set its name to something other than its default name (typically the simple class name).
                    -->
-                <entry key-ref="proxyAuthenticationHandler" value-ref="principalResolver" />
-                <entry key-ref="ldapPasswordHandler" value-ref="principalResolver"/>
+                <entry key-ref="proxyAuthenticationHandler" value-ref="proxyPrincipalResolver" />
+                <entry key-ref="ldapAuthenticationHandler" value-ref="primaryPrincipalResolver"/>
             </map>
         </constructor-arg>
 
@@ -91,24 +91,17 @@
     <bean id="proxyAuthenticationHandler"
         class="org.jasig.cas.authentication.handler.support.HttpBasedServiceCredentialsAuthenticationHandler"
         p:httpClient-ref="httpClient" />
-
-    <bean id="principalResolver"
-        class="org.jasig.cas.authentication.principal.BasicPrincipalResolver">
+	
+	<bean id="proxyPrincipalResolver" class="org.jasig.cas.authentication.principal.BasicPrincipalResolver" />
+	
+    <bean id="primaryPrincipalResolver" class="org.jasig.cas.authentication.principal.PersonDirectoryPrincipalResolver" >
+        <property name="attributeRepository" ref="attributeRepository" />
     </bean>
-
-    <bean id="ldapPasswordHandler"
-        class="org.georchestra.cas.ldap.GeorchestraLdapAuthenticationHandler"
-        p:principalIdAttribute="uid"
-        p:connectionFactory-ref="connectionFactory">
-        <constructor-arg ref="authenticator" />
-        <constructor-arg value="${ldap.admin.username}" />
-        <constructor-arg value="${ldap.admin.password}" />
-        <constructor-arg value="${ldap.authn.groupSearchBaseDn}" />
-        <constructor-arg value="${ldap.authn.groupSearchFilter}" />
-        <constructor-arg value="${ldap.authn.groupRoleAttribute}" />
-        <constructor-arg value="${ldap.authn.pendingGroupName}" />
-
-    </bean>
+	
+	<bean id="ldapAuthenticationHandler"
+          class="org.jasig.cas.authentication.LdapAuthenticationHandler"
+          p:principalIdAttribute="uid"
+          c:authenticator-ref="authenticator" />
 
     <!--
        | NOTE:
@@ -179,9 +172,9 @@
         p:registeredServices-ref="registeredServicesList" />
 
     <util:list id="registeredServicesList">
-        <bean class="org.jasig.cas.services.RegexRegisteredService"
+        <!--<bean class="org.jasig.cas.services.RegexRegisteredService"
             p:id="0" p:name="HTTP and IMAP" p:description="Allows HTTP(S) and IMAP(S) protocols"
-            p:serviceId="^(https?|imaps?)://.*" p:evaluationOrder="10000001" />
+            p:serviceId="^(https?|imaps?)://.*" p:evaluationOrder="10000001" />-->
         <!--
         Use the following definition instead of the above to further restrict access
         to services within your domain (including sub domains).
@@ -189,18 +182,24 @@
         This example also demonstrates the configuration of an attribute filter
         that only allows for attributes whose length is 3.
         -->
-        <!--
         <bean class="org.jasig.cas.services.RegexRegisteredService">
-            <property name="id" value="1" />
+            <property name="id" value="0" />
             <property name="name" value="HTTP and IMAP on example.com" />
             <property name="description" value="Allows HTTP(S) and IMAP(S) protocols on example.com" />
-            <property name="serviceId" value="^(https?|imaps?)://([A-Za-z0-9_-]+\.)*example\.com/.*" />
-            <property name="evaluationOrder" value="0" />
-            <property name="attributeFilter">
-              <bean class="org.jasig.cas.services.support.RegisteredServiceRegexAttributeFilter" c:regex="^\w{3}$" /> 
-            </property>
+            <property name="serviceId" value="^(https?|imaps?)://.*" />
+            <property name="evaluationOrder" value="10000001" />
+			<property name="usernameAttribute" value="user" />
+            <property name="allowedAttributes">
+				<list>
+					<value>user</value>
+					<value>firstname</value>
+					<value>lastname</value>
+					<value>email</value>
+					<value>organisation</value>
+					<value>groups</value>
+				</list>
+			</property>
         </bean>
-        -->
     </util:list>
 
     <bean id="auditTrailManager" class="com.github.inspektr.audit.support.Slf4jLoggingAuditTrailManager" />
@@ -221,4 +220,30 @@
             p:serviceTicketCountWarnThreshold="5000"
             p:sessionCountWarnThreshold="100000" />
     </util:list>
+	
+	<bean id="attributeRepository"
+		  class="org.jasig.cas.persondir.LdapPersonAttributeDao"
+		  p:connectionFactory-ref="pooledLdapConnectionFactory"
+		  p:baseDN="${ldap.authn.userSearchBaseDn}"
+		  p:searchControls-ref="searchControls"
+		  p:searchFilter="${ldap.authn.searchFilter}"
+		  init-method="initialize">
+		<property name="queryAttributeMapping">
+            <map>
+                <entry key="username" value="uid" />
+            </map>
+        </property>
+		<property name="resultAttributeMapping">
+			<map>
+				<entry key="uid" value="user" />
+				<entry key="givenName" value="firstname" />
+				<entry key="sn" value="lastname" />
+				<entry key="mail" value="email" />
+				<entry key="o" value="organisation" />
+				<entry key="memberOf" value="groups" />
+			</map>
+		</property>
+	</bean>
+	
+	<bean id="searchControls" class="javax.naming.directory.SearchControls" p:searchScope="1" p:countLimit="1" />
 </beans>

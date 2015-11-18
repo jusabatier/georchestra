@@ -6,10 +6,7 @@ port=@shared.server.port@
 ldapUrl=@shared.ldapUrl@
 groupSearchBaseDn=@shared.ldap.groupSearchBaseDN@,@shared.ldap.baseDn@
 userSearchBaseDn=@shared.ldap.userSearchBaseDN@,@shared.ldap.baseDn@
-userFilter=(@shared.ldap.uid@={user})
+userFilter=(&(@shared.ldap.uid@={user})(memberOf=*)(!(memberOf=@shared.ldap.groupRoleAttribute@=@shared.ldap.ldapPendingGroupName@,@shared.ldap.groupSearchBaseDN@,@shared.ldap.baseDn@)))
 ldapAdminUsername=@shared.ldap.admin.dn@
 ldapAdminPassword=@shared.ldap.admin.password@
-ldapGroupSearchFilter=@shared.ldap.groupSearchFilter@
 authoritiesBaseDN=@shared.ldap.groupSearchBaseDN@
-groupRoleAttribute=@shared.ldap.groupRoleAttribute@
-ldapPendingGroupName=@shared.ldap.ldapPendingGroupName@
