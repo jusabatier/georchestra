@@ -33,7 +33,7 @@ webmail:
   volumes_from:
     - smtp:rw
 
-geoserver_geodata:
+geodata:
   image: georchestra/ssh_data
   ports:
     - "2222:22"
@@ -43,7 +43,7 @@ geoserver_geodata:
 # geOrchestra images
     
 geoserver:
-  image: georchestra/geoserver:15.12
+  image: georchestra/geoserver:latest
   volumes:
     - geoserver_datadir:/var/local/geoserver
     - geoserver_geodata:/var/local/geodata
@@ -51,14 +51,18 @@ geoserver:
   links:
     - database
     - ldap
+  environment:
+    - XMX=2g
 
 geowebcache:
-  image: georchestra/geowebcache:15.12
+  image: georchestra/geowebcache:latest
   volumes:
     - geowebcache_tiles:/var/local/tiles
+  environment:
+    - XMX=1g
 
 proxy:
-  image: georchestra/security-proxy:15.12
+  image: georchestra/security-proxy:latest
   ports:
     - "8080:8080"
   links:
@@ -74,23 +78,29 @@ proxy:
     - analytics
     - catalogapp
     - downloadform
+  environment:
+    - XMX=1g
 
 cas:
-  image: georchestra/cas:15.12
+  image: georchestra/cas:latest
   links:
     - ldap
+  environment:
+    - XMX=1g
 
 mapfishapp:
-  image: georchestra/mapfishapp:15.12
+  image: georchestra/mapfishapp:latest
   volumes:
     - mapfishapp_uploads:/var/local/uploads
   links:
     - database
   volumes:
     - mapfishapp_uploads:/var/local/uploads
+  environment:
+    - XMX=1g
 
 extractorapp:
-  image: georchestra/extractorapp:15.12
+  image: georchestra/extractorapp:latest
   volumes:
     - extractorapp_extracts:/var/local/extracts
   links:
@@ -98,20 +108,25 @@ extractorapp:
     - smtp
   volumes:
     - extractorapp_extracts:/var/local/extracts
-
+  environment:
+    - XMX=1g
 
 header:
-  image: georchestra/header:15.12
+  image: georchestra/header:latest
+  environment:
+    - XMX=512m
 
 ldapadmin:
-  image: georchestra/ldapadmin:15.12
+  image: georchestra/ldapadmin:latest
   links:
     - database
     - ldap
     - smtp
+  environment:
+    - XMX=1g
 
 geonetwork:
-  image: georchestra/geonetwork:3-15.12
+  image: georchestra/geonetwork:3-latest
   ports:
     - "1099:1099"
   links:
@@ -119,14 +134,18 @@ geonetwork:
     - ldap
   volumes:
     - geonetwork_datadir:/var/local/geonetwork
+  environment:
+    - XMX=2g
 
 analytics:
-  image: georchestra/analytics:15.12
+  image: georchestra/analytics:latest
   links:
     - database
+  environment:
+    - XMX=512m
 
 catalogapp:
-  image: georchestra/catalogapp:15.12
+  image: georchestra/catalogapp:latest
 
 downloadform:
-  image: georchestra/downloadform:15.12
+  image: georchestra/downloadform:latest
